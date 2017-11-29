@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+    codename: maiev
+    tier: sidecar
+spec:
+  containers:
+    - name: kafka
+      image: spotify/kafka
+      imagePullPolicy: IfNotPresent
+      readinessProbe:
+        tcpSocket:
+          port: 9092
+        initialDelaySeconds: 5
+        timeoutSeconds: 1
+      env:
+        - name: ADVERTISED_HOST
+          value: "kafka"
+        - name: ADVERTISED_PORT
+          value: "9092"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  labels:
+    codename: maiev
+    tier: sidecar
+spec:
+  type: NodePort
+  ports:
+    - name: "service"
+      port: 9092
+      targetPort: 9092
+      protocol: TCP
+    - name: "zookeeper"
+      port: 2181
+      targetPort: 2181
+      protocol: TCP
+  selector:
+    app: kafka
+    codename: maiev
+    tier: sidecar
