@@ -1,13 +1,7 @@
-FROM kubespark/spark-base:v2.2.0-kubernetes-0.3.0
+FROM kubespark/spark-driver:v2.2.0-kubernetes-0.5.0
 
 ENV ASSEMBLY_NAME=maiev-assembly-1.0.jar
 ENV JAR_PATH=target/scala-2.11/$ASSEMBLY_NAME
 
 ADD $JAR_PATH /opt/spark/jars/$ASSEMBLY_NAME
 
-CMD SPARK_CLASSPATH="${SPARK_HOME}/jars/*" && \
-    if ! [ -z ${SPARK_MOUNTED_CLASSPATH+x} ]; then SPARK_CLASSPATH="$SPARK_MOUNTED_CLASSPATH:$SPARK_CLASSPATH"; fi && \
-    if ! [ -z ${SPARK_SUBMIT_EXTRA_CLASSPATH+x} ]; then SPARK_CLASSPATH="$SPARK_SUBMIT_EXTRA_CLASSPATH:$SPARK_CLASSPATH"; fi && \
-    if ! [ -z ${SPARK_EXTRA_CLASSPATH+x} ]; then SPARK_CLASSPATH="$SPARK_EXTRA_CLASSPATH:$SPARK_CLASSPATH"; fi && \
-    if ! [ -z ${SPARK_MOUNTED_FILES_DIR} ]; then cp -R "$SPARK_MOUNTED_FILES_DIR/." .; fi && \
-    exec /sbin/tini -- ${JAVA_HOME}/bin/java $SPARK_DRIVER_JAVA_OPTS -cp $SPARK_CLASSPATH -Xms$SPARK_DRIVER_MEMORY -Xmx$SPARK_DRIVER_MEMORY $SPARK_DRIVER_CLASS $SPARK_DRIVER_ARGS

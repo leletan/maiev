@@ -48,11 +48,14 @@ docker stop spark-submitter || true && docker rm spark-submitter || true
 kubectl delete --ignore-not-found -n ${KUBERNETES_NAMESPACE} pod ${SPARK_DRIVER_POD_NAME}
 while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | wc -l) -gt 1 ]
 do
+    echo "===== old spark driver still running, waiting ... ====="
     sleep 5
 done
 
+echo "===== oldspark driver deleted, submitting ... ====="
+
 # Submit
-docker run --rm --name spark-submitter \
+docker run --rm -d --name spark-submitter \
         leletan/spark-k8s-submitter:${ENVIRONMENT} \
         bin/spark-submit \
         --deploy-mode cluster \
@@ -67,8 +70,15 @@ docker run --rm --name spark-submitter \
         --conf spark.driver.memory=${SPARK_DRIVER_MEMORY} \
         --conf spark.kubernetes.driver.docker.image=${DRIVER_IMAGE_NAME}:${DOCKER_TAG} \
         --conf spark.kubernetes.executor.docker.image=${EXECUTOR_IMAGE_NAME}:${DOCKER_TAG}  \
-        --conf spark.kubernetes.initcontainer.docker.image=kubespark/spark-init:v2.2.0-kubernetes-0.3.0 \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
+while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]
+do
+    echo "===== new spark driver not up, waiting ... ====="
+    sleep 5
+done
+
+echo "===== spark driver running, port forwarding for job UI ... ====="
+nohup kubectl port-forward ${SPARK_DRIVER_POD_NAME} 4040:4040 &
 popd > /dev/null
 
