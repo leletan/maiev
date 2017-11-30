@@ -11,7 +11,17 @@ libraryDependencies ++= {
   Seq(
     // for structured streaming
     "org.apache.spark" %% "spark-sql-kafka-0-10" % sparkV,
-    "org.apache.spark" %% "spark-sql" % sparkV
+    "org.apache.spark" %% "spark-sql" % sparkV,
+
+    // typesafe
+    "com.typesafe" % "config" % "1.3.2",
+
+    // for s3a to work
+    "com.amazonaws" % "aws-java-sdk" %   "1.7.4",
+    "org.apache.hadoop" % "hadoop-aws" % "2.7.3" excludeAll(
+      ExclusionRule("com.amazonaws", "aws-java-sdk"),
+      ExclusionRule("commons-beanutils")
+    )
   )
 }
 

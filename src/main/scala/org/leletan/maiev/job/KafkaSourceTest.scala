@@ -1,10 +1,28 @@
 package org.leletan.maiev.job
 
+import java.sql.Timestamp
+
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.streaming.Trigger
+import org.leletan.maiev.config.{AwsConfig, SafeConfig}
 /**
  * Created by jiale.tan on 4/26/17.
  */
-object KafkaSourceTest extends App{
+object KafkaSourceTest
+  extends App
+  with AwsConfig
+  with SafeConfig
+{
+
+  val defaultConfigFileName = "KafkaSourceTest"
+
+  override def config: Config = {
+    val confKey = "SPARK_CONFIG_FILE"
+    val fileName = System.getProperty(confKey, Option(System.getenv(confKey)).getOrElse(defaultConfigFileName))
+    ConfigFactory.load(s"$fileName.conf")
+  }
+
   val spark = SparkSession
     .builder
     .appName("StructuredKafkaWordCount")
@@ -21,17 +39,17 @@ object KafkaSourceTest extends App{
     .option("startingOffsets", "latest")
     .option("failOnDataLoss", "true")
     .load()
-    .selectExpr("CAST(value AS STRING)")
-    .as[String]
+    .selectExpr("CAST(value AS STRING)", "topic", "partition", "offset", "timestamp")
+    .as[(String, String, Int, Long, Timestamp)]
 
-  // Generate running word count
-  val wordCounts = lines.flatMap(_.split(" ")).groupBy("value").count()
-
-  // Start running the query that prints the running counts to the console
-  val query = wordCounts.writeStream
-    .outputMode("complete")
-    .format("console")
-    .start()
+  val query = lines
+    .writeStream
+    .outputMode("append")
+    .format("parquet")
+    .partitionBy("timestamp")
+    .option("checkpointLocation", "/tmp/checkpoint")
+    .trigger(Trigger.ProcessingTime("10 seconds"))
+    .start(s"s3a://$s3Bucket/$s3Prefix/parquest_test")
 
   query.awaitTermination()
 }

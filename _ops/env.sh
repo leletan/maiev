@@ -3,7 +3,6 @@
 ENVIRONMENT=$1
 PROJECT_NAME=maiev
 ASSEMBLY_NAME=${PROJECT_NAME}-assembly-1.0.jar
-S3_BUCKET=vungle2-dataeng
 DRIVER_IMAGE_NAME=leletan/spark-k8s-driver-${PROJECT_NAME}
 EXECUTOR_IMAGE_NAME=leletan/spark-k8s-executor-${PROJECT_NAME}
 
