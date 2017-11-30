@@ -7,7 +7,7 @@ source env.sh $ENVIRONMENT
 popd > /dev/null
 
 
-SIDECAR_CNT=$(ls -1 _ops/${ENVIRONMENT}/sidecar/ | wc -l)
+SIDECAR_POD_CNT=$(ls -1 _ops/${ENVIRONMENT}/sidecar/ | grep 'kind: Pod' | wc -l)
 
 kubectl delete --ignore-not-found -f _ops/${ENVIRONMENT}/sidecar/
 
@@ -20,7 +20,7 @@ done
 echo "old sidecars are terminated"
 
 kubectl apply -f ./_ops/${ENVIRONMENT}/sidecar/
-while [ $(kubectl get pod -n default -l tier=sidecar | grep '1/1' | grep 'Running' | wc -l) -lt $SIDECAR_CNT ]
+while [ $(kubectl get pod -n default -l tier=sidecar | grep '1/1' | grep 'Running' | wc -l) -lt $SIDECAR_POD_CNT ]
 do
     echo "sidecar is not ready, waiting..."
     sleep 5

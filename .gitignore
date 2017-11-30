@@ -17,3 +17,4 @@ env.dev.sh
 # Scala-IDE specific
 .scala_dependencies
 .worksheet
+nohup.out

@@ -6,7 +6,7 @@ ifndef JOB
 JOB=KafkaSourceTest
 endif
 
-publish_artifact:
+publish:
 	bash ./_ops/publish_artifact.sh $(ENV)
 
 deploy:
