@@ -2,7 +2,6 @@
 
 ENVIRONMENT=$1
 JOB=$2
-VERSION=$3
 CPATH=`PWD`
 pushd $(dirname $0) > /dev/null
 source env.sh ${ENVIRONMENT}
@@ -55,7 +54,7 @@ done
 echo "===== oldspark driver deleted, submitting ... ====="
 
 # Submit
-docker run --rm -d --name spark-submitter \
+docker run --rm --name spark-submitter \
         leletan/spark-k8s-submitter:${ENVIRONMENT} \
         bin/spark-submit \
         --deploy-mode cluster \
@@ -70,15 +69,22 @@ docker run --rm -d --name spark-submitter \
         --conf spark.driver.memory=${SPARK_DRIVER_MEMORY} \
         --conf spark.kubernetes.driver.docker.image=${DRIVER_IMAGE_NAME}:${DOCKER_TAG} \
         --conf spark.kubernetes.executor.docker.image=${EXECUTOR_IMAGE_NAME}:${DOCKER_TAG}  \
+        --conf spark.hadoop.fs.s3a.access.key=${AWS_KEY} \
+        --conf spark.hadoop.fs.s3a.secret.key=${AWS_SECRET} \
+        --conf spark.s3.bucket=${S3_BUCKET} \
+        --conf spark.s3.prefix=${S3_PREFIX} \
+        --conf spark.streaming.zookeeper.connect=${ZOOKEEPER_CONNECT} \
+        --conf spark.streaming.kafka.broker.list=${KAFKA_BROKERS} \
+        --conf spark.streaming.kafka.topics=${KAFKA_TOPICS} \
+        --conf spark.streaming.kafka.group.id=${KAFKA_GROUP_ID} \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
-while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]
-do
-    echo "===== new spark driver not up, waiting ... ====="
-    sleep 5
-done
-
-echo "===== spark driver running, port forwarding for job UI ... ====="
-nohup kubectl port-forward ${SPARK_DRIVER_POD_NAME} 4040:4040 &
+#while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]
+#do
+#    echo "===== new spark driver not up, waiting ... ====="
+#    sleep 5
+#done
+#
+#echo "To view spark job dashboard, run kubectl port-forward ${SPARK_DRIVER_POD_NAME} 4040:4040"
 popd > /dev/null
 

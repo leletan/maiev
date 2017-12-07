@@ -7,11 +7,23 @@ DEV_NAME=
 KUBEMASTER_IP=$(minikube ip)
 KUBEMASTER_HOST=${KUBEMASTER_IP}:8443
 
-# AWS credentials to access vungle2 buckets.
+# AWS credentials
 AWS_KEY=
 AWS_SECRET=
+
+# S3 configs
+S3_BUCKET=
+S3_PREFIX=
 
 # Spark settings.
 SPARK_NUM_CORES=2
 SPARK_EXECUTOR_MEMORY=1G
 SPARK_DRIVER_MEMORY=1G
+
+# Zookeeper
+ZOOKEEPER_CONNECT=kafka:2181
+
+# Kafka
+KAFKA_BROKERS=kafka:9092
+KAFKA_TOPICS=topic1
+KAFKA_GROUP_ID=maiev_dev
