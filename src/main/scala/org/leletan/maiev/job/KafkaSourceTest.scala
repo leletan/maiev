@@ -2,18 +2,22 @@ package org.leletan.maiev.job
 
 import java.sql.Timestamp
 
+import com.twitter.zk.ZkClient
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
-import org.leletan.maiev.config.{AwsConfig, SafeConfig}
+import org.leletan.maiev.config.{AwsConfig, KafkaConfig, SafeConfig}
+import org.leletan.maiev.lib.{KafkaUnloader, ZookeeperKafkaOffsetStore}
+
 /**
  * Created by jiale.tan on 4/26/17.
  */
 object KafkaSourceTest
   extends App
-  with AwsConfig
-  with SafeConfig
-{
+    with KafkaUnloader
+    with KafkaConfig
+    with AwsConfig
+    with SafeConfig {
 
   val defaultConfigFileName = "KafkaSourceTest"
 
@@ -28,28 +32,17 @@ object KafkaSourceTest
     .appName("StructuredKafkaWordCount")
     .getOrCreate()
 
-  import spark.implicits._
+  val lines = createStreamFromOffsets(spark)
 
-  // Create DataSet representing the stream of input lines from kafka
-  val lines = spark
-    .readStream
-    .format("kafka")
-    .option("kafka.bootstrap.servers", "kafka:9092")
-    .option("subscribe", "topic1")
-    .option("startingOffsets", "latest")
-    .option("failOnDataLoss", "true")
-    .load()
-    .selectExpr("CAST(value AS STRING)", "topic", "partition", "offset", "timestamp")
-    .as[(String, String, Int, Long, Timestamp)]
-
-  val query = lines
+  lines
     .writeStream
     .outputMode("append")
-    .format("parquet")
-    .partitionBy("timestamp")
+    .format("org.leletan.maiev.lib.FileStreamSinkWithKafkaOffsetStoreProvider")
     .option("checkpointLocation", "/tmp/checkpoint")
     .trigger(Trigger.ProcessingTime("10 seconds"))
-    .start(s"s3a://$s3Bucket/$s3Prefix/parquest_test")
+    .option("path", s"s3a://$s3Bucket/$s3Prefix/parquest_test")
+    .option("group.id", groupId)
+    .start()
 
-  query.awaitTermination()
+  spark.streams.awaitAnyTermination()
 }

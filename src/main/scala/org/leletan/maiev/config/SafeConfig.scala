@@ -1,11 +1,10 @@
 package org.leletan.maiev.config
 
 import scala.util.Try
-
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 
 trait AbstractConfig {
-  def config: Config
+  def config: Config = ConfigFactory.load()
 }
 
 trait SafeConfig extends AbstractConfig {

@@ -2,7 +2,6 @@
 
 ENVIRONMENT=$1
 JOB=$2
-VERSION=$3
 CPATH=`PWD`
 pushd $(dirname $0) > /dev/null
 source env.sh ${ENVIRONMENT}
@@ -74,6 +73,10 @@ docker run --rm --name spark-submitter \
         --conf spark.hadoop.fs.s3a.secret.key=${AWS_SECRET} \
         --conf spark.s3.bucket=${S3_BUCKET} \
         --conf spark.s3.prefix=${S3_PREFIX} \
+        --conf spark.streaming.zookeeper.connect=${ZOOKEEPER_CONNECT} \
+        --conf spark.streaming.kafka.broker.list=${KAFKA_BROKERS} \
+        --conf spark.streaming.kafka.topics=${KAFKA_TOPICS} \
+        --conf spark.streaming.kafka.group.id=${KAFKA_GROUP_ID} \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
 #while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]

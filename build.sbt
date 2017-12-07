@@ -16,6 +16,9 @@ libraryDependencies ++= {
     // typesafe
     "com.typesafe" % "config" % "1.3.2",
 
+    // Zookeeper
+    "com.twitter" %% "util-zk" % "6.27.0",
+
     // for s3a to work
     "com.amazonaws" % "aws-java-sdk" %   "1.7.4",
     "org.apache.hadoop" % "hadoop-aws" % "2.7.3" excludeAll(
