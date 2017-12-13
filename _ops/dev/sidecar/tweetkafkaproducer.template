@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: twitterkafkaproducer
+  labels:
+    app: twitterkafkaproducer
+    codename: maiev
+    tier: sidecar
+spec:
+  containers:
+    - name: twitterkafkaproducer
+      image: rogaha/twitter-kafka-producer
+      imagePullPolicy: IfNotPresent
+      command: ["/start.sh"]
+      env:
+        - name: KAFKA_ENV_KAFKA_ADVERTISED_HOST_NAME
+          value: "kafka"
+        - name: KAFKA_PORT_9092_TCP_PORT
+          value: "9092"
+        - name: KAFKA_TOPIC_NAME
+          value: "topic1"
+        - name: ACCESS_TOKEN
+          value: "${ACCESS_TOKEN}"
+        - name: ACCESS_TOKEN_SECRET
+          value: "${ACCESS_TOKEN_SECRET}"
+        - name: CONSUMER_KEY
+          value: "${CONSUMER_KEY}"
+        - name: CONSUMER_SECRET
+          value: "${CONSUMER_SECRET}"
+        - name: KEYWORDS_LIST
+          value: "${KEYWORDS_LIST}"

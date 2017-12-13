@@ -38,11 +38,6 @@ class FileStreamSinkWithKafkaOffsetStore(
       .as[KafkaMetadata]
       .collect()
 
-    allKafkaMetaData.groupBy(_.topic).foreach{
-      case (topic, mdList) =>
-        info (s"Kafka meta data for topic $topic: ${mdList.mkString}")
-    }
-
     super.addBatch(batchId, data)
 
     try {
