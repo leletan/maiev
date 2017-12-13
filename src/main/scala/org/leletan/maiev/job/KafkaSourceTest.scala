@@ -40,7 +40,7 @@ object KafkaSourceTest
     .format("org.leletan.maiev.lib.FileStreamSinkWithKafkaOffsetStoreProvider")
     .option("checkpointLocation", "/tmp/checkpoint")
     .trigger(Trigger.ProcessingTime("10 seconds"))
-    .option("path", s"s3a://$s3Bucket/$s3Prefix/parquest_test")
+    .option("path", s"s3a://$s3Bucket/$s3Prefix")
     .option("group.id", groupId)
     .start()
 
