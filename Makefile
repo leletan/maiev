@@ -16,4 +16,4 @@ submit:
 	bash ./_ops/submit.sh $(ENV) $(JOB)
 
 sidecars:
-	bash ./_ops/sidecars.sh $(ENV)
+	bash ./_ops/$(ENV)/sidecars/restart.sh $(ENV)

@@ -62,7 +62,7 @@ docker run --rm --name spark-submitter \
         --master k8s://https://${KUBEMASTER_HOST} \
         --kubernetes-namespace ${KUBERNETES_NAMESPACE} \
         --conf spark.kubernetes.driver.pod.name=${SPARK_DRIVER_POD_NAME} \
-        --conf spark.executor.instances=2 \
+        --conf spark.executor.instances=1 \
         --conf spark.app.name=${JOB_NAME} \
         --conf spark.cores.max=${SPARK_NUM_CORES} \
         --conf spark.executor.memory=${SPARK_EXECUTOR_MEMORY} \
