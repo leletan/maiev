@@ -12,6 +12,7 @@ trait KafkaConfig {
     .filter(_.nonEmpty).getOrElse("2000000")
   lazy val ignoreSavedOffsets: Boolean = safeGetConfigBoolean("spark.streaming.kafka.ignoreSavedOffsets")
   lazy val groupId: String = safeGetConfig("spark.streaming.kafka.group.id")
+  lazy val maxOffsetsPerTrigger: String = safeGetConfig("spark.streaming.kafka.max.offsets.per.trigger")
   lazy val zookeeperConnect: String = safeGetConfig("spark.streaming.zookeeper.connect")
   lazy val topics: Array[String] = safeGetConfig("spark.streaming.kafka.topics").split(",")
 }

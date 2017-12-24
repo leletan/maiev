@@ -77,6 +77,7 @@ docker run --rm --name spark-submitter \
         --conf spark.streaming.kafka.broker.list=${KAFKA_BROKERS} \
         --conf spark.streaming.kafka.topics=${KAFKA_TOPICS} \
         --conf spark.streaming.kafka.group.id=${KAFKA_GROUP_ID} \
+        --conf spark.streaming.kafka.max.offsets.per.trigger=${KAFKA_MAX_OFFSET_PER_TRIGGER} \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
 #while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]

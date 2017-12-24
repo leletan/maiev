@@ -24,7 +24,10 @@ libraryDependencies ++= {
     "org.apache.hadoop" % "hadoop-aws" % "2.7.3" excludeAll(
       ExclusionRule("com.amazonaws", "aws-java-sdk"),
       ExclusionRule("commons-beanutils")
-    )
+    ),
+
+    // for cockroachdb
+    "org.postgresql" % "postgresql" % "42.1.4"
   )
 }
 

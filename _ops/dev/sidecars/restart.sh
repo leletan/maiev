@@ -64,3 +64,8 @@ rm ${SIDECAR_DIR}/tweetkafkaproducer.yaml
 
 echo "all sidecars are ready, continue..."
 
+echo "creating tables cockroachdb ... "
+kubectl run cockroachdb --attach=true --image=cockroachdb/cockroach --rm --restart=Never -- sql --insecure --host=cockroachdb-public -e \
+"CREATE DATABASE IF NOT EXISTS twitter;CREATE TABLE IF NOT EXISTS twitter.user (id INT PRIMARY KEY, follower_cnt INT);
+CREATE USER leletan WITH PASSWORD 'leletan'; GRANT ALL ON TABLE twitter.user TO leletan;"
+echo "cockroachdb tables created"
