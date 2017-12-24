@@ -8,16 +8,21 @@ import org.apache.spark.storage.StorageLevel
 import org.leletan.maiev.lib._
 
 /**
+ * ReliableKafkaSink should only be directly reading from kafka dataframe
+ * Or at least make sure the topic, partition and offset columns are in the dataframe
  * Created by jiale.tan on 12/21/17.
  */
-class ReliableKafkaSink(
-                         groupId: String,
-                         process: (Dataset[KafkaTopicData] => Unit))
-//url:String, user:String, pwd:String
+trait ReliableKafkaSink
   extends Sink
     with KafkaUtilities
     with Logger {
 
+  /**
+   * addBatch will record the offset, process the data
+   * and verify and save the offset in the store for every each mini batch
+   * @param batchId
+   * @param data
+   */
   override def addBatch(batchId: Long, data: DataFrame): Unit = {
     data.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
@@ -33,7 +38,7 @@ class ReliableKafkaSink(
     data.unpersist()
 
     try {
-      verifyAndStoreOffset(groupId, KafkaOffsetStoreFactory.getKafkaOffsetStore, allKafkaMetaData)
+      verifyAndStoreOffset(getGroupId, KafkaOffsetStoreFactory.getKafkaOffsetStore, allKafkaMetaData)
     } catch {
       case e: Exception =>
         error(e)
@@ -42,28 +47,18 @@ class ReliableKafkaSink(
         sys.exit(1)
     }
 
-
   }
 
+  /**
+   * get the group id of the kafka consumer
+   * @return
+   */
+  def getGroupId: String
 
-  //  extends ForeachWriter[Row] {
-  //  val driver = "org.postgresql.Driver"
-  //  var connection:Connection = _
-  //  var statement:Statement = _
-  //
-  //  def open(partitionId: Long,version: Long): Boolean = {
-  //    Class.forName(driver)
-  //    connection = DriverManager.getConnection("jdbc:postgresql://cockroachdb-public:26257/bank?sslmode=disable", "leletan", "leletan")
-  //    statement = connection.createStatement
-  //    true
-  //  }
-  //
-  //  def process(value: Row): Unit = {
-  //    statement.executeUpdate("UPSERT INTO twitter.user " +
-  //      "VALUES (" + value.getAs[Int]("id") + "," + value.getAs[Int]("followers_count") + ")")
-  //  }
-  //
-  //  def close(errorOrNull: Throwable): Unit = {
-  //    connection.close()
-  //  }
+  /**
+   * process the data
+   * @return
+   */
+  def process: Dataset[KafkaTopicData] => Unit
+
 }

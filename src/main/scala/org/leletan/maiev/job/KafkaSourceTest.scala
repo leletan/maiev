@@ -3,16 +3,9 @@ package org.leletan.maiev.job
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.streaming.{OutputMode, Trigger}
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.sources.StreamSinkProvider
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types._
-import org.leletan.maiev.config.{AwsConfig, KafkaConfig, SafeConfig}
-import org.leletan.maiev.lib.{JDBCConnectionFactory, KafkaOffsetStoreFactory, KafkaTopicData, KafkaUtilities}
-import org.leletan.maiev.sinks.ReliableKafkaSink
+import org.apache.spark.sql.streaming.Trigger
+import org.leletan.maiev.config.{AwsConfig, JDBCConfig, KafkaConfig, SafeConfig}
+import org.leletan.maiev.lib.KafkaUtilities
 
 /**
  * Created by jiale.tan on 4/26/17.
@@ -22,6 +15,7 @@ object KafkaSourceTest
     with KafkaUtilities
     with KafkaConfig
     with AwsConfig
+    with JDBCConfig
     with SafeConfig {
 
   val defaultConfigFileName = "KafkaSourceTest"
@@ -60,6 +54,10 @@ object KafkaSourceTest
     .outputMode("update")
     .trigger(Trigger.ProcessingTime("25 seconds"))
     .option("group.id", groupId)
+    .option("jdbc.driver", jdbcDriver)
+    .option("jdbc.url", jdbcURL)
+    .option("jdbc.user", jdbcUser)
+    .option("jdbc.password", jdbcPassword)
     .option("checkpointLocation", "/tmp/checkpoint")
     .start()
 

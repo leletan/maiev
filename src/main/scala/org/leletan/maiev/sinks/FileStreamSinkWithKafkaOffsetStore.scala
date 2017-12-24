@@ -6,32 +6,33 @@
 //import org.apache.spark.sql.execution.streaming.FileStreamSink
 //import org.apache.spark.sql.sources.StreamSinkProvider
 //import org.apache.spark.sql.streaming.OutputMode
-//import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
-//import org.leletan.maiev.lib.{KafkaOffsetStore, KafkaOffsetStoreFactory, KafkaUtilities, Logger}
+//import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SparkSession}
+//import org.leletan.maiev.lib._
 //
 ///**
 // * Created by jiale.tan on 12/4/17.
 // */
-//class FileStreamSinkWithKafkaOffsetStore(
-//                                          sparkSession: SparkSession,
-//                                          path: String,
-//                                          fileFormat: FileFormat,
-//                                          partitionColumnNames: Seq[String],
-//                                          options: Map[String, String],
-//                                          offsetStore: KafkaOffsetStore,
-//                                          clientId: String
-//                                        )
-//  extends FileStreamSink(
+//class ReliableParquetSink(
+//                           sparkSession: SparkSession,
+//                           path: String,
+//                           fileFormat: FileFormat,
+//                           partitionColumnNames: Seq[String],
+//                           options: Map[String, String],
+//                           offsetStore: KafkaOffsetStore,
+//                           clientId: String
+//                         )
+//  extends FileStreamSink (
 //    sparkSession: SparkSession,
 //    path: String,
 //    fileFormat: FileFormat,
 //    partitionColumnNames: Seq[String],
 //    options: Map[String, String])
-//    with KafkaUtilities
+//    with ReliableKafkaSink
 //    with Logger {
 //
-//  override def addBatch(batchId: Long, data: DataFrame): Unit = {
-//    processBatch(batchId, data, clientId, offsetStore, super.addBatch)
+//  override def getGroupId: String = clientId
+//
+//  override def process: Dataset[KafkaTopicData] => Unit = {
 //  }
 //}
 //

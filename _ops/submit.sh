@@ -73,6 +73,10 @@ docker run --rm --name spark-submitter \
         --conf spark.hadoop.fs.s3a.secret.key=${AWS_SECRET} \
         --conf spark.s3.bucket=${S3_BUCKET} \
         --conf spark.s3.prefix=${S3_PREFIX} \
+        --conf spark.jdbc.driver=${JDBC_DRIVER} \
+        --conf spark.jdbc.url=${JDBC_URL} \
+        --conf spark.jdbc.user=${JDBC_USER} \
+        --conf spark.jdbc.password=${JDBC_PASSWORD} \
         --conf spark.streaming.zookeeper.connect=${ZOOKEEPER_CONNECT} \
         --conf spark.streaming.kafka.broker.list=${KAFKA_BROKERS} \
         --conf spark.streaming.kafka.topics=${KAFKA_TOPICS} \

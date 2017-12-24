@@ -9,5 +9,5 @@ object JDBCConnectionFactory {
   Class.forName("org.postgresql.Driver")
   val connection: Connection =
     DriverManager
-    .getConnection("jdbc:postgresql://cockroachdb-public:26257/bank?sslmode=disable", "leletan", "leletan")
+    .getConnection("jdbc:postgresql://cockroachdb-public:26257/twitter?sslmode=disable", "leletan", "leletan")
 }
