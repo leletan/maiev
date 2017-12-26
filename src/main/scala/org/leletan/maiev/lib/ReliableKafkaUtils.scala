@@ -1,12 +1,15 @@
 package org.leletan.maiev.lib
 
 import com.twitter.util.{Await, Future}
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.functions.{max, min}
+import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Created by jialeKafkaExtractor.tan on 12/5/17.
  */
-trait KafkaUtilities extends Logger {
+trait ReliableKafkaUtils extends Logger {
 
   def createStreamFromOffsets(spark: SparkSession,
                               topics: Array[String],
@@ -103,5 +106,34 @@ trait KafkaUtilities extends Logger {
           }.toSeq
       )
     )
+  }
+
+  def processBatch(batchId: Long,
+                   data: DataFrame,
+                   groupId: String)
+                  (process: Dataset[KafkaTopicData] => Unit): Unit = {
+    data.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+    import data.sparkSession.implicits._
+    val allKafkaMetaData = data
+      .groupBy($"topic", $"partition")
+      .agg(max($"offset").cast(LongType).as("to"), min($"offset").cast(LongType).as("from"))
+      .as[KafkaMetadata]
+      .collect()
+
+    process(data.selectExpr("topic", "CAST(value AS STRING)").as[KafkaTopicData])
+
+    data.unpersist()
+
+    try {
+      verifyAndStoreOffset(groupId, KafkaOffsetStoreFactory.getKafkaOffsetStore, allKafkaMetaData)
+    } catch {
+      case e: Exception =>
+        error(e)
+        // Exit the application to prevent offset gaps, otherwise it may result in
+        // the application keeps running but not updates offsets in storage.
+        sys.exit(1)
+    }
+
   }
 }

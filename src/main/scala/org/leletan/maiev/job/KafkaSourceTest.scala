@@ -1,18 +1,20 @@
 package org.leletan.maiev.job
 
 
+import java.util.Properties
+
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
 import org.leletan.maiev.config.{AwsConfig, JDBCConfig, KafkaConfig, SafeConfig}
-import org.leletan.maiev.lib.KafkaUtilities
+import org.leletan.maiev.lib.ReliableKafkaUtils
 
 /**
  * Created by jiale.tan on 4/26/17.
  */
 object KafkaSourceTest
   extends App
-    with KafkaUtilities
+    with ReliableKafkaUtils
     with KafkaConfig
     with AwsConfig
     with JDBCConfig
@@ -32,41 +34,44 @@ object KafkaSourceTest
     .getOrCreate()
 
 
-  val lines = createStreamFromOffsets(spark,
+  val lines = createStreamFromOffsets(
+    spark,
     topics,
     groupId,
     brokers,
     maxOffsetsPerTrigger)
+    .repartition(2)
 
-  //  lines
-  //    .writeStream
-  //    .outputMode("append")
-  //    .format("org.leletan.maiev.sinks.FileStreamSinkWithKafkaOffsetStoreProvider")
-  //    .option("checkpointLocation", "/tmp/checkpoint")
-  //    .trigger(Trigger.ProcessingTime("10 seconds"))
-  //    .option("path", s"s3a://$s3Bucket/$s3Prefix")
-  //    .option("group.id", groupId)
-  //    .start()
+  lines
+    .writeStream
+    .format("org.leletan.maiev.sinks.ReliableParquetSinkProvider")
+    .outputMode("append")
+    .trigger(Trigger.ProcessingTime("10 seconds"))
+    .option("checkpointLocation", "/tmp/checkpoint/parquet")
+    .option("kafka.group.id", groupId)
+    .option("path", s"s3a://$s3Bucket/$s3Prefix")
+    .start()
 
   lines
     .writeStream
     .format("org.leletan.maiev.sinks.TwitterUserSinkProvider")
     .outputMode("update")
     .trigger(Trigger.ProcessingTime("25 seconds"))
-    .option("group.id", groupId)
+    .option("checkpointLocation", "/tmp/checkpoint/jdbc")
+    .option("kafka.group.id", groupId)
     .option("jdbc.driver", jdbcDriver)
     .option("jdbc.url", jdbcURL)
     .option("jdbc.user", jdbcUser)
     .option("jdbc.password", jdbcPassword)
-    .option("checkpointLocation", "/tmp/checkpoint")
+    .option("jdbc.dbtable", "twitter.user")
     .start()
 
-  //  output
-  //      .writeStream
-  //      .format("console")
-  //      .outputMode("append")
-  //      .trigger(Trigger.ProcessingTime("25 seconds"))
-  //      .start()
+  lines
+    .writeStream
+    .format("console")
+    .outputMode("append")
+    .trigger(Trigger.ProcessingTime("25 seconds"))
+    .start()
 
   spark.streams.awaitAnyTermination()
 
