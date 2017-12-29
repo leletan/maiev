@@ -1,26 +1,25 @@
 package org.leletan.maiev.job
 
-
-import java.util.Properties
-
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
-import org.leletan.maiev.config.{AwsConfig, JDBCConfig, KafkaConfig, SafeConfig}
+import org.leletan.maiev.config._
+import org.leletan.maiev.job.ReliableS3ParquetLogging.jobLogLevel
 import org.leletan.maiev.lib.ReliableKafkaUtils
 
 /**
  * Created by jiale.tan on 4/26/17.
  */
-object KafkaSourceTest
+object TwitterFollowerJDBCLogging
   extends App
     with ReliableKafkaUtils
     with KafkaConfig
     with AwsConfig
     with JDBCConfig
+    with JobConfig
     with SafeConfig {
 
-  val defaultConfigFileName = "KafkaSourceTest"
+  val defaultConfigFileName = "TwitterFollwerJDBCLogging"
 
   override def config: Config = {
     val confKey = "SPARK_CONFIG_FILE"
@@ -30,9 +29,10 @@ object KafkaSourceTest
 
   val spark = SparkSession
     .builder
-    .appName("StructuredKafkaWordCount")
+    .appName("TwitterFollwerJDBCLogging")
     .getOrCreate()
 
+  spark.sparkContext.setLogLevel(jobLogLevel)
 
   val lines = createStreamFromOffsets(
     spark,
@@ -40,17 +40,6 @@ object KafkaSourceTest
     groupId,
     brokers,
     maxOffsetsPerTrigger)
-    .repartition(2)
-
-  lines
-    .writeStream
-    .format("org.leletan.maiev.sinks.ReliableParquetSinkProvider")
-    .outputMode("append")
-    .trigger(Trigger.ProcessingTime("10 seconds"))
-    .option("checkpointLocation", "/tmp/checkpoint/parquet")
-    .option("kafka.group.id", groupId)
-    .option("path", s"s3a://$s3Bucket/$s3Prefix")
-    .start()
 
   lines
     .writeStream
@@ -64,13 +53,6 @@ object KafkaSourceTest
     .option("jdbc.user", jdbcUser)
     .option("jdbc.password", jdbcPassword)
     .option("jdbc.dbtable", "twitter.user")
-    .start()
-
-  lines
-    .writeStream
-    .format("console")
-    .outputMode("append")
-    .trigger(Trigger.ProcessingTime("25 seconds"))
     .start()
 
   spark.streams.awaitAnyTermination()

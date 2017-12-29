@@ -2,10 +2,6 @@ ifndef ENV
 ENV=dev
 endif
 
-ifndef JOB
-JOB=KafkaSourceTest
-endif
-
 publish:
 	bash ./_ops/publish_artifact.sh $(ENV)
 

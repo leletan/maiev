@@ -3,7 +3,7 @@ package org.leletan.maiev.sinks
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.FileFormat
 import org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat
-import org.apache.spark.sql.execution.streaming.FileStreamSink
+import org.apache.spark.sql.execution.streaming.{FileStreamSink, Sink}
 import org.apache.spark.sql.sources.StreamSinkProvider
 import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SparkSession}
@@ -18,12 +18,7 @@ class ReliableParquetSink(
                            fileFormat: FileFormat,
                            partitionColumnNames: Seq[String],
                            parameters: Map[String, String])
-  extends FileStreamSink(
-    sparkSession: SparkSession,
-    path: String,
-    fileFormat: FileFormat,
-    partitionColumnNames: Seq[String],
-    parameters: Map[String, String])
+  extends Sink
     with ReliableKafkaUtils
     with Logger {
 
@@ -33,13 +28,15 @@ class ReliableParquetSink(
     })
 
   override def addBatch(batchId: Long, data: DataFrame): Unit = {
-    processBatch(batchId, data, groupId){
+    processBatch(batchId, data, groupId) {
       ds: Dataset[KafkaTopicData] =>
-        super.addBatch(batchId, ds.toDF())
+        ds.toDF()
+          .write
+          .mode("append")
+          .parquet(path)
     }
   }
 }
-
 
 class ReliableParquetSinkProvider
   extends StreamSinkProvider {
