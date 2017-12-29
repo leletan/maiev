@@ -2,10 +2,6 @@ ifndef ENV
 ENV=dev
 endif
 
-ifndef JOB
-JOB=KafkaSourceTest
-endif
-
 publish:
 	bash ./_ops/publish_artifact.sh $(ENV)
 
@@ -16,4 +12,4 @@ submit:
 	bash ./_ops/submit.sh $(ENV) $(JOB)
 
 sidecars:
-	bash ./_ops/sidecars.sh $(ENV)
+	bash ./_ops/$(ENV)/sidecars/restart.sh $(ENV)
