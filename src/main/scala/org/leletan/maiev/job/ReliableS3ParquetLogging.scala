@@ -1,25 +1,25 @@
 package org.leletan.maiev.job
 
-import java.sql.Timestamp
-
-import com.twitter.zk.ZkClient
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
-import org.leletan.maiev.config.{AwsConfig, KafkaConfig, SafeConfig}
-import org.leletan.maiev.lib.{KafkaUnloader, ZookeeperKafkaOffsetStore}
+import org.joda.time.DateTime
+import org.leletan.maiev.config._
+import org.leletan.maiev.lib.ReliableKafkaUtils
 
 /**
  * Created by jiale.tan on 4/26/17.
  */
-object KafkaSourceTest
+object ReliableS3ParquetLogging
   extends App
-    with KafkaUnloader
+    with ReliableKafkaUtils
     with KafkaConfig
     with AwsConfig
+    with JDBCConfig
+    with JobConfig
     with SafeConfig {
 
-  val defaultConfigFileName = "KafkaSourceTest"
+  val defaultConfigFileName = "ReiliableS3ParquetLogging"
 
   override def config: Config = {
     val confKey = "SPARK_CONFIG_FILE"
@@ -29,20 +29,29 @@ object KafkaSourceTest
 
   val spark = SparkSession
     .builder
-    .appName("StructuredKafkaWordCount")
+    .appName("ReiliableS3ParquetLogging")
     .getOrCreate()
 
-  val lines = createStreamFromOffsets(spark)
+  spark.sparkContext.setLogLevel(jobLogLevel)
+
+  val lines = createStreamFromOffsets(
+    spark,
+    topics,
+    groupId,
+    brokers,
+    maxOffsetsPerTrigger)
 
   lines
     .writeStream
+    .format("org.leletan.maiev.sinks.ReliableParquetSinkProvider")
     .outputMode("append")
-    .format("org.leletan.maiev.lib.FileStreamSinkWithKafkaOffsetStoreProvider")
-    .option("checkpointLocation", "/tmp/checkpoint")
-    .trigger(Trigger.ProcessingTime("10 seconds"))
+    .trigger(Trigger.ProcessingTime("60 seconds"))
+    .option("checkpointLocation", s"/tmp/checkpoint/parquet/")
+    .option("kafka.group.id", groupId)
     .option("path", s"s3a://$s3Bucket/$s3Prefix")
-    .option("group.id", groupId)
     .start()
 
   spark.streams.awaitAnyTermination()
+
 }
+
