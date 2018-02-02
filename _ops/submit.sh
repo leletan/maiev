@@ -20,6 +20,11 @@ case $JOB in
         MAIN_CLASS=org.leletan.maiev.job.ReliableS3ParquetLogging
         SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-S3Parquet" | awk '{print tolower($0)}')
         ;;
+    redshift_to_redis)
+        JOB_NAME=Maiev.RedshiftToRedis
+        MAIN_CLASS=org.leletan.maiev.job.RedshiftToRedis
+        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-Rdshft2Rdis" | awk '{print tolower($0)}')
+        ;;
     *)
     	echo "Bad job: $JOB"
         exit 1
@@ -39,7 +44,7 @@ case $ENVIRONMENT in
         ;;
     dev)
         JOB_NAME=$(echo "DEV-${JOB_NAME}" | awk '{print tolower($0)}')
-        KUBERNETES_NAMESPACE=default
+        KUBERNETES_NAMESPACE=prod
         ;;
     *)
     	echo "Bad environment: $ENVIRONMENT"
@@ -72,12 +77,14 @@ docker run --rm --name spark-submitter \
         --master k8s://https://${KUBEMASTER_HOST} \
         --kubernetes-namespace ${KUBERNETES_NAMESPACE} \
         --conf spark.kubernetes.driver.pod.name=${SPARK_DRIVER_POD_NAME} \
-        --conf spark.executor.instances=1 \
+        --conf spark.executor.instances=20 \
         --conf spark.app.name=${JOB_NAME} \
         --conf spark.cores.max=${SPARK_NUM_CORES} \
         --conf spark.executor.memory=${SPARK_EXECUTOR_MEMORY} \
         --conf spark.driver.memory=${SPARK_DRIVER_MEMORY} \
+        --conf spark.kubernetes.executor.limit.cores=2 \
         --conf spark.sql.shuffle.partitions=${SPARK_SQL_SHUFFLE_PARTITIONS} \
+        --conf spark.default.parallelism=${SPARK_DEFAULT_PARALLELISM} \
         --conf spark.kubernetes.driver.docker.image=${DRIVER_IMAGE_NAME}:${DOCKER_TAG} \
         --conf spark.kubernetes.executor.docker.image=${EXECUTOR_IMAGE_NAME}:${DOCKER_TAG}  \
         --conf spark.hadoop.fs.s3a.access.key=${AWS_KEY} \
@@ -98,14 +105,16 @@ docker run --rm --name spark-submitter \
         --conf spark.streaming.kafka.group.id=${KAFKA_GROUP_ID} \
         --conf spark.streaming.kafka.max.offsets.per.trigger=${KAFKA_MAX_OFFSET_PER_TRIGGER} \
         --conf spark.job.log.level=${JOB_LOG_LEVEL} \
+        --conf spark.redshift.db.name=${REDSHIFT_DB_NAME} \
+        --conf spark.redshift.user.id=${REDSHIFT_USER_ID} \
+        --conf spark.redshift.password=${REDSHIFT_PASSWOR} \
+        --conf spark.redshift.url=${REDSHIFT_URL} \
+        --conf spark.redshift.temp.s3.dir=${REDSHIFT_TEMP_S3_DIR} \
+        --conf spark.redshift2redis.start="${R2R_START_DATE}" \
+        --conf spark.redshift2redis.end="${R2R_END_DATE}" \
+        --conf "spark.driver.extraJavaOptions=-Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.executor.extraJavaOptions=-Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
-#while [ $(kubectl get pod -n ${KUBERNETES_NAMESPACE} ${SPARK_DRIVER_POD_NAME} | grep 1/1 | wc -l) -lt 1 ]
-#do
-#    echo "===== new spark driver not up, waiting ... ====="
-#    sleep 5
-#done
-#
-#echo "To view spark job dashboard, run kubectl port-forward ${SPARK_DRIVER_POD_NAME} 4040:4040"
 popd > /dev/null
 

@@ -27,7 +27,18 @@ libraryDependencies ++= {
     ),
 
     // for cockroachdb
-    "org.postgresql" % "postgresql" % "42.1.4"
+    "org.postgresql" % "postgresql" % "42.1.4",
+
+    // for redshift
+    "com.databricks" % "spark-redshift_2.11" % "3.0.0-preview1",
+    "com.amazon.redshift" % "jdbc4" % "1.2.10.1009"
+      from "https://s3.amazonaws.com/redshift-downloads/drivers/RedshiftJDBC42-1.2.10.1009.jar",
+
+    // redis
+    "redis.clients" % "jedis" % "2.9.0",
+
+    // statsd
+    "com.timgroup" % "java-statsd-client" % "3.0.1"
   )
 }
 
