@@ -65,27 +65,38 @@ object RedshiftToRedis
 
   installs.show()
 
-  val maxTryCnt = safeGetConfigInt("redshift2redis.retry.cnt")
+  lazy val maxTryCnt = safeGetConfigInt("redshift2redis.retry.cnt")
+  lazy val bfSha = safeGetConfig("redshift2redis.bf.sha")
 
   installs.foreachPartition {
     partition =>
-      val sha = "257824595b292d3a6d16be5833c9882dd10bd5dc"
       val bfErrRate = "0.01"
       val bfReservedCap = "1"
       val conn = JedisFactory.getConn
       partition.foreach {
         install =>
           StatsClient.Incr("tx.attempt")
-          upsertInstallHistory(install, conn, sha, bfErrRate, bfReservedCap) match {
+          retry[RedisResponse](maxTryCnt)(upsertInstallHistory(install, conn, bfSha, bfErrRate, bfReservedCap)) match {
             case Success(s) =>
               StatsClient.Incr("tx.succeeded")
             case Failure(e) =>
               error(e)
-              info(s"upsertInstallHistory($install, conn, $sha, $bfErrRate, $bfReservedCap)")
+              info(s"upsertInstallHistory($install, conn, $bfSha, $bfErrRate, $bfReservedCap)")
               StatsClient.Incr("tx.failed")
           }
       }
       conn.close()
+  }
+
+  @annotation.tailrec
+  def retry[T](n: Int)(fn: => Try[T]): Try[T] = {
+    fn match {
+      case x: util.Success[T] => x
+      case _ if n > 1 =>
+        Thread.sleep(50)
+        retry(n - 1)(fn)
+      case f => f
+    }
   }
 
   def upsertInstallHistory(install: InstallHisotry,

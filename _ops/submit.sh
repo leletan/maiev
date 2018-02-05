@@ -77,12 +77,12 @@ docker run --rm --name spark-submitter \
         --master k8s://https://${KUBEMASTER_HOST} \
         --kubernetes-namespace ${KUBERNETES_NAMESPACE} \
         --conf spark.kubernetes.driver.pod.name=${SPARK_DRIVER_POD_NAME} \
-        --conf spark.executor.instances=20 \
+        --conf spark.executor.instances=${POD_INSTANCE_COUNT} \
         --conf spark.app.name=${JOB_NAME} \
         --conf spark.cores.max=${SPARK_NUM_CORES} \
         --conf spark.executor.memory=${SPARK_EXECUTOR_MEMORY} \
         --conf spark.driver.memory=${SPARK_DRIVER_MEMORY} \
-        --conf spark.kubernetes.executor.limit.cores=2 \
+        --conf spark.kubernetes.executor.limit.cores=${SPARK_NUM_CORES} \
         --conf spark.sql.shuffle.partitions=${SPARK_SQL_SHUFFLE_PARTITIONS} \
         --conf spark.default.parallelism=${SPARK_DEFAULT_PARALLELISM} \
         --conf spark.kubernetes.driver.docker.image=${DRIVER_IMAGE_NAME}:${DOCKER_TAG} \
@@ -112,8 +112,8 @@ docker run --rm --name spark-submitter \
         --conf spark.redshift.temp.s3.dir=${REDSHIFT_TEMP_S3_DIR} \
         --conf spark.redshift2redis.start="${R2R_START_DATE}" \
         --conf spark.redshift2redis.end="${R2R_END_DATE}" \
-        --conf "spark.driver.extraJavaOptions=-Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
-        --conf "spark.executor.extraJavaOptions=-Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.driver.extraJavaOptions=-Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.executor.extraJavaOptions=-Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
 popd > /dev/null

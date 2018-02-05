@@ -10,7 +10,12 @@ trait RedisClientConfig {
   this: SafeConfig =>
   lazy val redisHost: String = safeGetConfig("redis.host")
   lazy val redisPort: Int = safeGetConfigInt("redis.port")
-  lazy val redisAuth: String = safeGetConfig("redis.auth")
+  lazy val redisAuth: Option[String] = {
+    val auth = safeGetConfig("redis.auth")
+    if (auth.isEmpty) None
+    else Some(auth)
+  }
+
   lazy val redisDB: Int = safeGetConfigInt("redis.db")
   lazy val redisMaxConn: Int = safeGetConfigInt("redis.max.conn")
 }

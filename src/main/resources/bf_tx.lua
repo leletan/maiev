@@ -2,7 +2,6 @@
 Redis script that updates a bloom filter with
 the value specified. If the bloom filter does
 not exist it is created.
-sha: 257824595b292d3a6d16be5833c9882dd10bd5dc
 --]]
 
 do
