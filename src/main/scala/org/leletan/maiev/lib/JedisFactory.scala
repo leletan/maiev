@@ -1,6 +1,7 @@
 package org.leletan.maiev.lib
 
 import org.leletan.maiev.config.{RedisClientConfig, SafeConfig}
+import org.spark_project.guava.util.concurrent.RateLimiter
 import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
 
 /**
@@ -12,6 +13,8 @@ object JedisFactory
     with SafeConfig
     with Logger {
 
+  lazy val rateLimiter: RateLimiter = RateLimiter.create(maxRatePerPool.toDouble)
+
   lazy private val jedisPool = {
 
     info(s"jedis pool config: redisHost: $redisHost, redisPort: $redisPort, redisAuth: $redisAuth, redisDB: $redisDB")
@@ -19,7 +22,8 @@ object JedisFactory
     new JedisPool(
       {
         val pc = new JedisPoolConfig()
-        pc.setMaxTotal(128)
+        pc.setMaxTotal(maxRatePerPool + 1)
+        pc.setMaxIdle(maxRatePerPool + 1)
         pc
       },
       redisHost,
@@ -30,7 +34,7 @@ object JedisFactory
     )
   }
 
-  def getConn: Jedis = {
+  def getResource: Jedis = {
     jedisPool.getResource
   }
 

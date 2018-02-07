@@ -1,5 +1,6 @@
 package org.leletan.maiev.config
 
+import org.leletan.maiev.job.RedshiftToRedis.safeGetConfigInt
 import redis.clients.jedis.{JedisPool, JedisPoolConfig}
 
 
@@ -18,4 +19,6 @@ trait RedisClientConfig {
 
   lazy val redisDB: Int = safeGetConfigInt("redis.db")
   lazy val redisMaxConn: Int = safeGetConfigInt("redis.max.conn")
+  lazy val maxRatePerPool: Int = safeGetConfigInt("redis.max.rate.per.pool")
+
 }

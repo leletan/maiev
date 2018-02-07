@@ -1,7 +1,9 @@
 package org.leletan.maiev.job
 
+
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.joda.time.DateTime
 import org.leletan.maiev.config._
@@ -9,6 +11,9 @@ import org.leletan.maiev.lib.{JedisFactory, Logger, StatsClient}
 import redis.clients.jedis.Jedis
 
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
  * Created by jiale.tan on 1/30/18.
@@ -23,8 +28,11 @@ object RedshiftToRedis
     with Logger {
 
   val defaultConfigFileName = "RedshiftToRedis"
-  val start = safeGetConfig("spark.redshift2redis.start")
-  val end = safeGetConfig("spark.redshift2redis.end")
+  lazy val start = safeGetConfig("spark.redshift2redis.start")
+  lazy val end = safeGetConfig("spark.redshift2redis.end")
+  lazy val maxTryCnt = safeGetConfigInt("redshift2redis.retry.cnt")
+  lazy val bfSha = safeGetConfig("redshift2redis.bf.sha")
+
 
   override def config: Config = {
     val confKey = "SPARK_CONFIG_FILE"
@@ -39,7 +47,6 @@ object RedshiftToRedis
 
   spark.sparkContext.setLogLevel(jobLogLevel)
 
-
   val query =
     "SELECT dev_id, " +
       "advertiser_app_store_id, " +
@@ -52,7 +59,7 @@ object RedshiftToRedis
 
   import spark.implicits._
 
-  val installs = spark
+  val results = spark
     .read
     .format("com.databricks.spark.redshift")
     .option("url", redshiftJDBCURL)
@@ -61,32 +68,37 @@ object RedshiftToRedis
     .option("query", query)
     .load()
     .as[InstallHisotry]
-    .persist(StorageLevel.MEMORY_AND_DISK_SER_2)
-
-  installs.show()
-
-  lazy val maxTryCnt = safeGetConfigInt("redshift2redis.retry.cnt")
-  lazy val bfSha = safeGetConfig("redshift2redis.bf.sha")
-
-  installs.foreachPartition {
-    partition =>
-      val bfErrRate = "0.01"
-      val bfReservedCap = "1"
-      val conn = JedisFactory.getConn
-      partition.foreach {
-        install =>
-          StatsClient.Incr("tx.attempt")
-          retry[RedisResponse](maxTryCnt)(upsertInstallHistory(install, conn, bfSha, bfErrRate, bfReservedCap)) match {
-            case Success(s) =>
-              StatsClient.Incr("tx.succeeded")
-            case Failure(e) =>
-              error(e)
-              info(s"upsertInstallHistory($install, conn, $bfSha, $bfErrRate, $bfReservedCap)")
-              StatsClient.Incr("tx.failed")
+    .mapPartitions {
+      partition =>
+        val futures =
+          partition.map {
+            install =>
+              Future {
+                JedisFactory.rateLimiter.acquire()
+                StatsClient.Incr("tx.attempt")
+                val resource = JedisFactory.getResource
+                val result = retry[RedisResponse](maxTryCnt)(upsertInstallHistory(install, resource, bfSha, "0.01", "1")) match {
+                  case Success(_) =>
+                    StatsClient.Incr("tx.succeeded")
+                    true
+                  case Failure(e) =>
+                    error(e)
+                    info(s"upsertInstallHistory($install, conn, $bfSha, 0.01, 1)")
+                    StatsClient.Incr("tx.failed")
+                    false
+                }
+                resource.close()
+                result
+              }
           }
-      }
-      conn.close()
-  }
+        Await.result(Future.sequence(futures), Duration.Inf)
+    }
+    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+  info(s"For job from $start to $end: \n" +
+    s"succeeded: ${results.filter(_ == true).count()}\n" +
+    s"failed: ${results.filter(_ == false).count()}"
+  )
 
   @annotation.tailrec
   def retry[T](n: Int)(fn: => Try[T]): Try[T] = {

@@ -13,17 +13,17 @@ case $JOB in
     twitter_follower_jdbc_logging)
         JOB_NAME=Maiev.TwitterFollwerJDBCLogging
         MAIN_CLASS=org.leletan.maiev.job.TwitterFollowerJDBCLogging
-        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-Twitter" | awk '{print tolower($0)}')
+        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-Twitter-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         ;;
     reliable_s3_parquet_logging)
         JOB_NAME=Maiev.ReiliableS3ParquetLogging
         MAIN_CLASS=org.leletan.maiev.job.ReliableS3ParquetLogging
-        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-S3Parquet" | awk '{print tolower($0)}')
+        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-S3Parquet-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         ;;
     redshift_to_redis)
         JOB_NAME=Maiev.RedshiftToRedis
         MAIN_CLASS=org.leletan.maiev.job.RedshiftToRedis
-        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-Rdshft2Rdis" | awk '{print tolower($0)}')
+        SPARK_DRIVER_POD_NAME=$(echo "Spark-Driver-${PROJECT_NAME}-${ENVIRONMENT}-Rdshft2Rdis-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         ;;
     *)
     	echo "Bad job: $JOB"
@@ -35,15 +35,15 @@ KAFKA_GROUP_ID=${KAFKA_GROUP_ID_PREFIX}_${JOB}
 
 case $ENVIRONMENT in
     prod)
-        JOB_NAME=$(echo "PROD-${JOB_NAME}" | awk '{print tolower($0)}')
+        JOB_NAME=$(echo "PROD-${JOB_NAME}-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         KUBERNETES_NAMESPACE=prod
         ;;
     qa)
-        JOB_NAME=$(echo "QA-${JOB_NAME}" | awk '{print tolower($0)}')
+        JOB_NAME=$(echo "QA-${JOB_NAME}-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         KUBERNETES_NAMESPACE=qa
         ;;
     dev)
-        JOB_NAME=$(echo "DEV-${JOB_NAME}" | awk '{print tolower($0)}')
+        JOB_NAME=$(echo "DEV-${JOB_NAME}-${JOB_SUFFIX}" | awk '{print tolower($0)}')
         KUBERNETES_NAMESPACE=prod
         ;;
     *)
@@ -93,6 +93,7 @@ docker run --rm --name spark-submitter \
         --conf spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version=2 \
         --conf spark.hadoop.parquet.enable.summary-metadata=false \
         --conf spark.speculation=false \
+        --conf spark.task.maxFailures=10 \
         --conf spark.s3.bucket=${S3_BUCKET} \
         --conf spark.s3.prefix=${S3_PREFIX} \
         --conf spark.jdbc.driver=${JDBC_DRIVER} \
@@ -112,8 +113,8 @@ docker run --rm --name spark-submitter \
         --conf spark.redshift.temp.s3.dir=${REDSHIFT_TEMP_S3_DIR} \
         --conf spark.redshift2redis.start="${R2R_START_DATE}" \
         --conf spark.redshift2redis.end="${R2R_END_DATE}" \
-        --conf "spark.driver.extraJavaOptions=-Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
-        --conf "spark.executor.extraJavaOptions=-Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.driver.extraJavaOptions=-Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.executor.extraJavaOptions=-Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
 popd > /dev/null
