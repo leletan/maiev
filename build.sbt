@@ -1,3 +1,5 @@
+import sbt.ExclusionRule
+
 name := "maiev"
 
 version := "1.0"
@@ -10,8 +12,8 @@ libraryDependencies ++= {
   val sparkV = "2.2.0"
   Seq(
     // for structured streaming
-    "org.apache.spark" %% "spark-sql-kafka-0-10" % sparkV,
-    "org.apache.spark" %% "spark-sql" % sparkV,
+    "org.apache.spark" %% "spark-sql-kafka-0-10" % sparkV % "provided",
+    "org.apache.spark" %% "spark-sql" % sparkV % "provided",
 
     // typesafe
     "com.typesafe" % "config" % "1.3.2",
@@ -20,10 +22,18 @@ libraryDependencies ++= {
     "com.twitter" %% "util-zk" % "6.27.0",
 
     // for s3a to work
-    "com.amazonaws" % "aws-java-sdk" %   "1.7.4",
+    "com.amazonaws" % "aws-java-sdk" % "1.7.4" excludeAll(
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-annotations"),
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-core"),
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-databind")
+    ),
+
     "org.apache.hadoop" % "hadoop-aws" % "2.7.3" excludeAll(
       ExclusionRule("com.amazonaws", "aws-java-sdk"),
-      ExclusionRule("commons-beanutils")
+      ExclusionRule("commons-beanutils"),
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-annotations"),
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-core"),
+      ExclusionRule("com.fasterxml.jackson.core", "jackson-databind")
     ),
 
     // for cockroachdb
