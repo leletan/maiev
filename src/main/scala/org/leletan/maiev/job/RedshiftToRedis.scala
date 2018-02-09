@@ -2,8 +2,7 @@ package org.leletan.maiev.job
 
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import org.joda.time.DateTime
 import org.leletan.maiev.config._
@@ -105,7 +104,7 @@ object RedshiftToRedis
     fn match {
       case x: util.Success[T] => x
       case _ if n > 1 =>
-        Thread.sleep(50)
+        Thread.sleep(1000 / n)
         retry(n - 1)(fn)
       case f => f
     }

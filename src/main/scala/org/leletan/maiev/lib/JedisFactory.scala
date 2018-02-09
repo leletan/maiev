@@ -13,7 +13,7 @@ object JedisFactory
     with SafeConfig
     with Logger {
 
-  lazy val rateLimiter: RateLimiter = RateLimiter.create(maxRatePerPool.toDouble)
+  lazy val rateLimiter: RateLimiter = RateLimiter.create(redisMaxRatePerPool.toDouble)
 
   lazy private val jedisPool = {
 
@@ -22,13 +22,13 @@ object JedisFactory
     new JedisPool(
       {
         val pc = new JedisPoolConfig()
-        pc.setMaxTotal(maxRatePerPool + 1)
-        pc.setMaxIdle(maxRatePerPool + 1)
+        pc.setMaxTotal(redisMaxConnPerPool)
+        pc.setMaxIdle(redisMaxIdlePerPool)
         pc
       },
       redisHost,
       redisPort,
-      5000,
+      redisTimeoutInMillis,
       redisAuth.orNull,
       redisDB
     )
@@ -39,45 +39,3 @@ object JedisFactory
   }
 
 }
-
-// import org.spark_project.guava.util.concurrent.RateLimiter
-// import scala.concurrent.duration.Duration
-// import scala.concurrent.{Await, Future}
-//object test extends App {
-//
-//  lazy val redisAuth: String = {
-//    val auth = ""
-//    if (auth.isEmpty) {
-//      null
-//    } else
-//      auth
-//  }
-//
-//  val jedisPool = new JedisPool(
-//    {
-//      val pc = new JedisPoolConfig()
-//      pc.setMaxTotal(128)
-//      pc
-//    },
-//    "xxx.yyy.zzz.aa",
-//    6379,
-//    5000,
-//    null,
-//    0
-//  )
-//
-//  val rateLimiter = RateLimiter.create(3.0)
-//
-//  import scala.concurrent.ExecutionContext.Implicits.global
-//
-//  Await.result(
-//  Future.sequence(
-//  (1 to 10).map{
-//  i =>
-//    Future[Unit] {
-//      rateLimiter.acquire()
-//      println(s"thread $i: ${jedisPool.getResource.getDB}")
-//    }
-//  }), Duration.Inf)
-//
-//}

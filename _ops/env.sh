@@ -38,7 +38,7 @@ if [ "$ENVIRONMENT" != "null" ]; then
 fi
 
 GITVERSION=$(git rev-parse --short HEAD)
-DOCKER_TAG=${ENVIRONMENT}-0.49
+DOCKER_TAG=${ENVIRONMENT}-0.52
 if [ "$ENVIRONMENT" != "dev" ]; then
     DOCKER_TAG=${ENVIRONMENT}-${GITVERSION}
 fi

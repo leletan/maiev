@@ -113,8 +113,8 @@ docker run --rm --name spark-submitter \
         --conf spark.redshift.temp.s3.dir=${REDSHIFT_TEMP_S3_DIR} \
         --conf spark.redshift2redis.start="${R2R_START_DATE}" \
         --conf spark.redshift2redis.end="${R2R_END_DATE}" \
-        --conf "spark.driver.extraJavaOptions=-Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
-        --conf "spark.executor.extraJavaOptions=-Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB} -Dredis.max.conn=128" \
+        --conf "spark.driver.extraJavaOptions=-Dredis.max.idel.per.pool=${REDIS_MAX_IDLE} -Dredis.max.conn.per.pool=${REDIS_MAX_CONN} -Dredis.timeout.in.millis=${REDIS_TIMEOUT} -Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB}" \
+        --conf "spark.executor.extraJavaOptions=-Dredis.max.idel.per.pool=${REDIS_MAX_IDLE} -Dredis.max.conn.per.pool=${REDIS_MAX_CONN} -Dredis.timeout.in.millis=${REDIS_TIMEOUT} -Dredis.max.rate.per.pool=${REDIS_MAX_RATE} -Dredshift2redis.bf.sha=${R2R_BF_SHA} -Dredshift2redis.retry.cnt=${R2R_RETRY_CNT} -Dstats.host=${STATS_CLIENT} -Dstats.prefix=${STATS_PREFIX} -Dredis.host=${REDIS_HOST} -Dredis.port=${REDIS_PORT} -Dredis.auth=${REDIS_AUTH} -Dredis.db=${REDIS_DB}" \
         local:///opt/spark/jars/${ASSEMBLY_NAME}
 
 popd > /dev/null
