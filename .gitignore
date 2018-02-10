@@ -18,3 +18,5 @@ env.dev.sh
 .scala_dependencies
 .worksheet
 nohup.out
+*.conf
+
