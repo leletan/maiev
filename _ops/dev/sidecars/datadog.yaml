@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dd-agent
+  labels:
+    app: datadog-prod-datadog
+spec:
+  ports:
+    - name: "service"
+      port: 8125
+      targetPort: 8125
+      protocol: UDP
+  selector:
+    app: datadog-prod-datadog
